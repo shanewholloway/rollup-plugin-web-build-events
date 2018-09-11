@@ -1,0 +1,39 @@
+{
+  "name": "rollup-plugin-web-build-events",
+  "version": "0.0.1",
+  "description": "",
+  "license": "MIT",
+  "author": "Shane Holloway",
+  "homepage": "https://github.com/shanewholloway/rollup-plugin-web-build-events#readme",
+  "keywords": [
+    "rollup",
+    "rollup-plugin"
+  ],
+  "files": [
+    "cjs",
+    "esm",
+    "umd"
+  ],
+  "main": "cjs/index.js",
+  "module": "esm/index.js",
+  "browser": "umd/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shanewholloway/rollup-plugin-web-build-events.git"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "rollup": "^0.64.1",
+    "rollup-plugin-jsy-lite": "^1.2.3"
+  },
+  "scripts": {
+    "clean": "rm -rf cjs/ esm/ umd/",
+    "build": "rollup --config",
+    "watch": "npm -s run build -- --watch"
+  },
+  "oow-scripts": {
+    "pretest": "npm -s run build",
+    "test": "npm -s run test:one",
+    "test:one": "rollup --config test/test.rollup.config.js"
+  }
+}

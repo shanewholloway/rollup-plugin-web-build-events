@@ -1,0 +1,63 @@
+const http = require('http'), https = require('https')
+
+export default createEventSourceServer
+export function createEventSourceServer(opts) ::
+  if null == opts :: opts = {}
+  if null == opts.host :: opts.host = '127.0.0.1'
+  if ! opts.port :: opts.port = 35810
+
+  const is_tls = Boolean @ opts.cert || opts.key || opts.pfx
+  const svr = is_tls
+    ? https.createServer(opts)
+    : http.createServer(opts)
+
+  const subscription_set = new Set()
+
+  svr.on @ 'request', (req, res) => ::
+    asJSONServerSentEvents @ res, subscription_set
+
+  Object.defineProperties @ sendUpdates, @{}
+    server: @{} value: svr
+
+  svr.listen @ opts, () => ::
+    if ! opts.silent ::
+      const {address: host, port} = svr.address()
+      const protocol = is_tls ? 'https:' : 'http:'
+      console.log @ 'SSE listening at', `${protocol}//${host}:${port}`
+  return sendUpdates
+
+  function sendUpdates(evt_update) ::
+    for const send_update of subscription_set ::
+      send_update @ evt_update
+
+
+export function asJSONServerSentEvents(res, subscription_set) ::
+  res.socket.setTimeout(0).setKeepAlive(true).setNoDelay(true)
+  res.writeHead @ 200, @:
+    'Content-Type': 'text/event-stream'
+    'Cache-Control': 'no-cache'
+    'Connection': 'keep-alive'
+    'Access-Control-Allow-Origin': '*'
+
+  res.once @ 'error', shutdown
+  res.once @ 'close', shutdown
+
+  let write = res.write.bind(res)
+  res = undefined
+
+  if null != subscription_set ::
+    subscription_set.add @ sendJSONData
+
+  write @ `\n\n:sse ready\n\n`
+  return sendJSONData
+
+  function sendJSONData(obj) ::
+    if undefined !== write ::
+      write @ `data: ${JSON.stringify(obj)}\n\n`
+      return true
+
+  function shutdown(...args) ::
+    write = undefined
+    if null != subscription_set ::
+      subscription_set.delete @ sendJSONData
+

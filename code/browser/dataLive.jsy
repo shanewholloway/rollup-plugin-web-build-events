@@ -1,0 +1,49 @@
+import { sse_reload_evt_update } from './sse.jsy'
+
+export default reloadDataLive
+export function reloadDataLive(rootDoc) ::
+  if ! rootDoc :: rootDoc = window.document
+
+  window.addEventListener @ sse_reload_evt_update, reloadDataLiveElements, false
+  return () => ::
+    window.removeEventListener @ sse_reload_evt_update, reloadDataLiveElements, false
+
+  function reloadDataLiveElements(evt) ::
+    evt.preventDefault()
+
+    const {updates, mapping} = evt.detail || {}
+    if null == updates :: return
+
+    const elemList = rootDoc.querySelectorAll('[data-live]')
+
+    const grp_msg = `reload [data-live] elements (${elemList.length})`
+    console.groupCollapsed(grp_msg)
+    try ::
+      for const el of elemList ::
+        const [attr, change_key] = el.dataset['live'].split(' ')
+        const entry = mapping[change_key]
+        if undefined === entry :: continue
+
+        const value = entry.ts
+          ? `${entry.value}?ts=${entry.ts}`
+          : entry.value
+
+        const cur = el[attr] || ''
+        if ! value || cur.endsWith(value) ::
+          continue // unchanged
+
+        console.log @ `reload "${change_key}": ${attr}=${value} (was ${cur})`
+        replaceElement @ el, {[attr]: value}
+
+    finally ::
+      console.groupEnd(grp_msg)
+
+
+export function replaceElement(element, changes) ::
+  const el = element.ownerDocument.createElement(element.nodeName)
+  for const a of element.attributes ::
+    el.setAttribute @ a.name, changes[a.name] || a.value
+
+  element.parentNode.replaceChild(el, element)
+  return el
+

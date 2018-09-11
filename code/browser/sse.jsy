@@ -1,0 +1,88 @@
+
+export const sse_reload_key = '@@sse-reload'
+export const sse_reload_evt_rebind = '@@sse-reload rebind'
+export const sse_reload_evt_connection = '@@sse-reload connection'
+export const sse_reload_evt_update = '@@sse-reload update'
+export const sse_reload_evt_errors = '@@sse-reload errors'
+export const sse_reload_evt_shutdown = '@@sse-reload shutdown'
+
+
+export default connectReloadEventSource
+export function connectReloadEventSource(url) ::
+  if ! url :: url = 'http://127.0.0.1:35810'
+
+  const tsid = Date.now().toString(36)
+
+  const es = new EventSource(url)
+  Object.assign @ es, @{}
+    onopen() ::
+      const evt = new Event @ sse_reload_evt_connection
+      if window.dispatchEvent(evt) ::
+        console.warn @ `SSE reload ready (${tsid})`
+
+    onerror(err) ::
+      const evt = new Event @ sse_reload_evt_connection
+      evt.error = err
+      if window.dispatchEvent(evt) ::
+        console.warn @ `SSE reload NOT ready (${tsid})`
+
+    onmessage({data}) ::
+      let detail
+      try ::
+        detail = JSON.parse @ data
+      catch err ::
+        return console.error @ `SSE reload JSON error (${tsid})`, err
+
+      detail.tsid = tsid
+      dispatch_update(detail)
+
+
+  ::
+    const prev_shutdown = window[sse_reload_key]
+    window[sse_reload_key] = shutdown
+
+    if null != prev_shutdown ::
+      prev_shutdown()
+
+    window.dispatchEvent @
+      new Event(sse_reload_evt_rebind)
+
+  return shutdown
+
+
+  function shutdown() ::
+    es.close()
+    window.dispatchEvent @
+      new Event(sse_reload_evt_shutdown)
+
+
+  function dispatch_update(detail) ::
+    const {updates, errors} = detail
+    const has_errors = errors && 0 !== errors.length
+    const grp_msg = has_errors
+      ? `SSE reload (${tsid}) with ${errors.length} errors`
+      : Array.isArray(updates)
+        ? `SSE reload (${tsid}) with ${updates.length} updates`
+        : `SSE reload (${tsid}) notice`
+
+    if has_errors ::
+      console.group(grp_msg)
+    else console.groupCollapsed(grp_msg)
+
+    try ::
+      const evt_err = new CustomEvent @ sse_reload_evt_errors, @{} detail: errors
+      if window.dispatchEvent(evt_err) ::
+        if has_errors ::
+          for const [err_key, err_msg] of errors ::
+            console.error @ 'Build Error:', err_msg
+
+      const evt = new CustomEvent @ sse_reload_evt_update, @{} detail
+      if window.dispatchEvent(evt) ::
+        if updates ::
+          console.log @ 'Build Updates:', updates
+
+    catch err ::
+      console.error(err)
+    finally ::
+      console.groupEnd(grp_msg)
+

@@ -1,0 +1,34 @@
+//import ErrorOverlay from 'react-error-overlay'
+import { sse_reload_evt_errors, sse_reload_evt_rebind, sse_reload_evt_shutdown } from './sse.jsy'
+
+export default reloadReactErrorOverlay
+export function reloadReactErrorOverlay(ErrorOverlay, opt) ::
+  if null == ErrorOverlay ::
+    throw new TypeError @ `Expected an ErrorOverlay compatible class (npm react-error-overlay@^4.0.0)`
+  if null == opt :: opt = {}
+
+  window.addEventListener @ sse_reload_evt_errors, updateErrorOverlay, false
+  window.addEventListener @ sse_reload_evt_rebind, startErrorOverlay, false
+  window.addEventListener @ sse_reload_evt_shutdown, stopErrorOverlay, false
+
+  startErrorOverlay()
+  return () => ::
+    window.removeEventListener @ sse_reload_evt_errors, updateErrorOverlay, false
+    window.removeEventListener @ sse_reload_evt_rebind, startErrorOverlay, false
+    window.removeEventListener @ sse_reload_evt_shutdown, stopErrorOverlay, false
+
+  function updateErrorOverlay(evt) ::
+    const errorList = evt.detail || []
+    if 0 !== errorList.length ::
+      for const [k, err_rec] of errorList ::
+        ErrorOverlay.reportBuildError @ err_rec.output
+
+    else ErrorOverlay.dismissBuildError()
+
+  function startErrorOverlay(evt) ::
+    try :: ErrorOverlay.startReportingRuntimeErrors(opt)
+    catch err :: // ignore...
+
+  function stopErrorOverlay(evt) ::
+    try :: ErrorOverlay.stopReportingRuntimeErrors()
+    catch err :: // ignore...

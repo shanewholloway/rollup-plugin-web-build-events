@@ -1,0 +1,18 @@
+import build_events from './base.jsy'
+import createEventSourceServer from './server/sse.jsy'
+
+export default sse_build_events
+export function sse_build_events(opts) ::
+  if null == opts :: opts = {}
+
+  const sendBuildUpdate = createEventSourceServer(opts)
+  const onBuildUpdate = opts.onBuildUpdate
+
+  opts.onBuildUpdate = lastBuildUpdate => ::
+    sendBuildUpdate(lastBuildUpdate)
+    if onBuildUpdate ::
+      return onBuildUpdate(lastBuildUpdate)
+
+  return Object.assign @ build_events(opts), @{}
+    name: 'sse-build-events'
+
