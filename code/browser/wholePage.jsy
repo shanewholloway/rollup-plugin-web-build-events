@@ -1,0 +1,14 @@
+import { sse_reload_evt_update } from './sse.jsy'
+
+export default reloadWholePage
+export function reloadWholePage(allowCache) ::
+  window.addEventListener @ sse_reload_evt_update, reloadWindowLocation, false
+  return () => ::
+    window.removeEventListener @ sse_reload_evt_update, reloadWindowLocation, false
+
+  function reloadWindowLocation(evt) ::
+    const {updates, mapping} = evt.detail || {}
+    if null == updates || 0 === updates.length :: return
+
+    window.location.reload(allowCache ? false : true)
+

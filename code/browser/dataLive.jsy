@@ -12,7 +12,7 @@ export function reloadDataLive(rootDoc) ::
     evt.preventDefault()
 
     const {updates, mapping} = evt.detail || {}
-    if null == updates :: return
+    if null == updates || 0 === updates.length :: return
 
     const elemList = rootDoc.querySelectorAll('[data-live]')
 

@@ -23,6 +23,7 @@ add_node_jsy('server/sse')
 add_web_jsy('browser/sse', {name: 'sse_build_events'})
 add_web_jsy('browser/dataLive', {name: 'reloadDataLive'})
 add_web_jsy('browser/reactErrorOverlay', {name: 'reloadReactErrorOverlay'})
+add_web_jsy('browser/wholePage', {name: 'reloadWholePage'})
 
 
 function add_node_jsy(fn_name, {external}={}) {
