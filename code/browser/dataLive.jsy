@@ -1,4 +1,5 @@
 import { onSSEReloadUpdate } from './sse.jsy'
+import { datalive_unpack, datalive_updateElement } from '../common/dataLive.jsy'
 
 export default reloadDataLive
 export function reloadDataLive({root, ms_reload}={}) ::
@@ -13,30 +14,13 @@ export function reloadDataLive({root, ms_reload}={}) ::
     console.groupCollapsed(grp_msg)
     try ::
       for const el of elemList ::
-        const [attr, change_key] = el.dataset['live'].split(' ')
-        const entry = mapping[change_key]
-        if undefined === entry :: continue
+        const datalive = datalive_unpack(mapping, el.dataset['live'])
+        if undefined === datalive.entry :: continue
 
-        const value = entry.ts
-          ? `${entry.value}?ts=${entry.ts}`
-          : entry.value
-
-        const cur = el[attr] || ''
-        if ! value || cur.endsWith(value) ::
-          continue // unchanged
-
-        console.log @ `reload "${change_key}": ${attr}=${value} (was ${cur})`
-        replaceElement @ el, {[attr]: value}
+        const updatedAttrs = datalive_updateElement @ el, datalive
+        if updatedAttrs ::
+          console.log @ `reload "${datalive.changeKey}"`, updatedAttrs
 
     finally ::
       console.groupEnd(grp_msg)
-
-
-export function replaceElement(element, changes) ::
-  const el = element.ownerDocument.createElement(element.nodeName)
-  for const a of element.attributes ::
-    el.setAttribute @ a.name, changes[a.name] || a.value
-
-  element.parentNode.replaceChild(el, element)
-  return el
 

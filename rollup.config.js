@@ -19,7 +19,10 @@ configs.push({
 
 
 add_node_jsy('sse')
+
 add_node_jsy('server/sse')
+add_node_jsy('server/dataLive')
+
 add_web_jsy('browser/sse', {name: 'sse_build_events'})
 add_web_jsy('browser/dataLive', {name: 'reloadDataLive'})
 add_web_jsy('browser/reactErrorOverlay', {name: 'reloadReactErrorOverlay'})

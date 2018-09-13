@@ -1,0 +1,47 @@
+const { promisify } = require('util')
+const { readFile, writeFile } = require('fs')
+import { datalive_unpack, datalive_htmlAttrs } from '../common/dataLive.jsy'
+
+const rx_data_live_list = @[]
+  /(data-live)="([^"]*)"/
+  /(data-live)='([^']*)'/
+  /(data-live-build)="([^"]*)"/
+  /(data-live-build)='([^']*)'/
+
+const rx_data_live_scan = new RegExp @
+  rx_data_live_list
+      .map @ rx => rx.source
+      .join @ '|'
+
+  , 'g'
+
+export function datalive_renderHTMLSource(mapping, source) ::
+  if undefined === source ::
+    return source => datalive_renderHTMLSource(mapping, source)
+
+  return source.replace @ rx_data_live_scan, (...args) => ::
+    args.pop() // source
+    args.pop() // location
+    args = args.filter(Boolean)
+
+    let res = 'data-live' === args[1]
+      ? args[0] + ' '
+      : ''
+
+    const datalive = datalive_unpack(mapping, args[2])
+    if undefined !== datalive.entry ::
+      res += datalive_htmlAttrs(datalive)
+    else ::
+      console.warn @ `Unresolved datalive key: "${datalive.changeKey}"`, datalive
+
+    return res
+
+export async function datalive_renderHTMLTempalteFile(mapping, options) ::
+  if undefined === options ::
+    return options => datalive_renderHTMLTempalteFile(mapping, options)
+
+  const html_source = await promisify(readFile) @ options.input, options.encoding || 'utf-8'
+  const rendered = datalive_renderHTMLSource @ mapping, html_source
+  if options.output ::
+    return await promisify(writeFile) @ options.output, rendered
+  else return rendered

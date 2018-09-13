@@ -1,0 +1,56 @@
+
+export function datalive_unpack(mapping, dataLiveAttrs, changeKey) ::
+  if 'string' === typeof dataLiveAttrs ::
+    dataLiveAttrs = dataLiveAttrs.split(' ')
+
+  const attrs = dataLiveAttrs
+  if undefined === changeKey ::
+    changeKey = dataLiveAttrs.pop()
+
+  const entry = mapping[changeKey]
+  if undefined === entry ::
+    return @{} attrs, changeKey
+
+  const live = {}
+  for const attr of dataLiveAttrs ::
+    live[attr] = entry[attr]
+
+  return @{}
+    live, entry, attrs, changeKey
+
+
+export function datalive_htmlAttrs(datalive) ::
+  const p = []
+  for const [k,v] of Object.entries(datalive.live) ::
+    p.push @ `${k}="${v}"`
+  return p.join(' ')
+
+
+export function datalive_updateElement(el, datalive) ::
+  let n_changes = 0
+  const updatedAttrs = {}
+
+  const {attrs, live} = datalive
+  for const attr of attrs ::
+    const value = live[attr], cur = el[attr] || ''
+    if ! value || value == cur ::
+      continue // unchanged
+    if 'string' === typeof value && ((cur||'')+'').endsWith(value) ::
+      continue // unchanged
+
+    updatedAttrs[attr] = value
+    ++n_changes
+
+  if 0 !== n_changes ::
+    replaceElement @ el, updatedAttrs
+    return updatedAttrs
+
+
+export function replaceElement(element, changes) ::
+  const el = element.ownerDocument.createElement(element.nodeName)
+  for const a of element.attributes ::
+    el.setAttribute @ a.name, changes[a.name] || a.value
+
+  element.parentNode.replaceChild(el, element)
+  return el
+

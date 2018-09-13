@@ -9,11 +9,11 @@ export function build_events({contentBase, skip, ms_update, ms_watch, ms_build, 
 
   if null == skip :: skip = fn => fn.startsWith('chunk-')
 
-  const mapping = Object.create(null)
-  const errors = Object.create(null)
-  let lastMapping = {}, flags = {}, is_watching
+  const mapping = {}, errors = {}, flags = {}
+  let is_watching, usingOtherUpdaters=0
 
-  let innerBuildUpdate = () => ::
+  let _lastUpdateMapping = {}
+  let innerBuildUpdate = function firstBuildUpdate() ::
     flags.is_watching = is_watching
 
     if ! ms_update ::
@@ -28,7 +28,10 @@ export function build_events({contentBase, skip, ms_update, ms_watch, ms_build, 
 
   return @{}
     name: 'build-events',
-    sendBuildUpdate
+
+    withBuildUpdater(updater_plugin_name) ::
+      ++usingOtherUpdaters
+      return notifyBuildUpdate
 
     options(inputOptions) ::
       const idx = inputOptions.plugins.indexOf(this)
@@ -54,10 +57,10 @@ export function build_events({contentBase, skip, ms_update, ms_watch, ms_build, 
             delete errors[errorKey]
           else return ;
 
-          sendBuildUpdate(null)
+          innerBuildUpdate()
 
     async generateBundle(outputOpts, bundle, isWrite) ::
-      if (!isWrite) return
+      if (!isWrite || usingOtherUpdaters) return
 
       const outDir = outputOpts.dir || path.dirname(outputOpts.file)
       if null == contentBase ::
@@ -65,35 +68,37 @@ export function build_events({contentBase, skip, ms_update, ms_watch, ms_build, 
 
       const outRoot = path.relative(contentBase, outDir)
 
+      const q_ts = '?_ts)='+Date.now().toString(36)
       const updates = []
-      for (const [outputFileName, bndl] of Object.entries(bundle)) ::
+      for const [outputFileName, bndl] of Object.entries(bundle) ::
         if skip @ outputFileName, bndl :: continue
 
-        const key = path.join(outRoot, outputFileName)
-        const ts = mapping[key] = @{} value: key, ts: Date.now().toString(36)
-        updates.push @# key, ts
+        const basic = path.join(outRoot, outputFileName)
+        const src = basic + q_ts
+        const entry = @{} basic, src
+        updates.push @# basic, entry
+        mapping[basic] = entry
 
       if 0 !== updates.length ::
-        sendBuildUpdate(updates)
+        innerBuildUpdate()
 
 
-  function sendBuildUpdate(updates, mergeUpdates) ::
-    if true === mergeUpdates ::
-      if Array.isArray(updates) ::
-        for const [k, v] of updates ::
-          mapping[k] = v
-      else Object.assign @ mapping, updates
+  function notifyBuildUpdate({updates}={}) ::
+    if Array.isArray(updates) ::
+      for const [k, v] of updates ::
+        mapping[k] = v
+    else Object.assign @ mapping, updates
 
     innerBuildUpdate() // debounced _computeBuildUpdate()
 
-  function _computeBuildUpdate() ::
+  function _computeBuildUpdate() :: // debounced innerBuildUpdate
     const updates = [], curMapping = {}
     for const e of Object.entries(mapping) ::
       curMapping[e[0]] = e[1]
-      if e[1] !== lastMapping[e[0]] ::
+      if e[1] !== _lastUpdateMapping[e[0]] ::
         updates.push(e)
 
-    lastMapping = curMapping
+    _lastUpdateMapping = curMapping
     onBuildUpdate @: updates, mapping, flags,
       errors: Object.entries(errors)
 
