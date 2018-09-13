@@ -1,8 +1,9 @@
 const path = require('path')
 
+import {debounce} from './utils.jsy'
 export default build_events
 
-export function build_events({contentBase, skip, ms_update, onBuildUpdate}={}) ::
+export function build_events({contentBase, skip, ms_update, ms_watch, ms_build, onBuildUpdate}={}) ::
   if 'function' !== typeof onBuildUpdate ::
     throw new TypeError('Expected onBuildUpdate to be a function')
 
@@ -10,27 +11,19 @@ export function build_events({contentBase, skip, ms_update, onBuildUpdate}={}) :
 
   const mapping = Object.create(null)
   const errors = Object.create(null)
-  let lastMapping = {}
+  let lastMapping = {}, flags = {}, is_watching
 
-  const innerBuildUpdate = debounce @ ms_update || 250, () => ::
-    const updates = [], curMapping = {}
-    for const e of Object.entries(mapping) ::
-      curMapping[e[0]] = e[1]
-      if e[1] !== lastMapping[e[0]] ::
-        updates.push(e)
+  let innerBuildUpdate = () => ::
+    flags.is_watching = is_watching
 
-    lastMapping = curMapping
-    onBuildUpdate @: updates, mapping,
-      errors: Object.entries(errors)
+    if ! ms_update ::
+      ms_update = is_watching
+        ? ms_watch || 500
+        : ms_build || 100
 
-  function sendBuildUpdate(updates, mergeUpdates) ::
-    if true === mergeUpdates ::
-      if Array.isArray(updates) ::
-        for const [k, v] of updates ::
-          mapping[k] = v
-      else Object.assign @ mapping, updates
+    innerBuildUpdate = debounce @ ms_update, _computeBuildUpdate
 
-    innerBuildUpdate()
+    return innerBuildUpdate()
 
 
   return @{}
@@ -47,6 +40,9 @@ export function build_events({contentBase, skip, ms_update, onBuildUpdate}={}) :
     _cloneWithErrorKey(errorKey) ::
       return @{}
         __proto__: this,
+        buildStart() ::
+          is_watching = undefined !== this.watcher
+
         buildEnd(err) ::
           if null != err ::
             const err_entry = errors[errorKey] = @{} err,
@@ -81,6 +77,28 @@ export function build_events({contentBase, skip, ms_update, onBuildUpdate}={}) :
         sendBuildUpdate(updates)
 
 
+  function sendBuildUpdate(updates, mergeUpdates) ::
+    if true === mergeUpdates ::
+      if Array.isArray(updates) ::
+        for const [k, v] of updates ::
+          mapping[k] = v
+      else Object.assign @ mapping, updates
+
+    innerBuildUpdate() // debounced _computeBuildUpdate()
+
+  function _computeBuildUpdate() ::
+    const updates = [], curMapping = {}
+    for const e of Object.entries(mapping) ::
+      curMapping[e[0]] = e[1]
+      if e[1] !== lastMapping[e[0]] ::
+        updates.push(e)
+
+    lastMapping = curMapping
+    onBuildUpdate @: updates, mapping, flags,
+      errors: Object.entries(errors)
+
+
+
 function formatError(err, err_entry) ::
   let res = '', frame_detail = ''
   if err.frame ::
@@ -102,11 +120,4 @@ function formatError(err, err_entry) ::
 
   res += '\n'
   return res
-
-
-function debounce(ms, inner) ::
-  let tid
-  return () => @
-    tid = clearTimeout(tid),
-    tid = setTimeout(inner, ms)
 

@@ -5,12 +5,19 @@ export default sse_build_events
 export function sse_build_events(opts) ::
   if null == opts :: opts = {}
 
-  const sendBuildUpdate = createEventSourceServer(opts)
-  const onBuildUpdate = opts.onBuildUpdate
+  let sendBuildUpdate = null
+  const onBuildUpdate = opts.onBuildUpdate || null
 
   opts.onBuildUpdate = lastBuildUpdate => ::
-    sendBuildUpdate(lastBuildUpdate)
-    if onBuildUpdate ::
+    if null !== sendBuildUpdate ::
+      sendBuildUpdate(lastBuildUpdate)
+
+    else if lastBuildUpdate.flags.is_watching ::
+      sendBuildUpdate = createEventSourceServer(opts)
+      sendBuildUpdate(lastBuildUpdate)
+
+
+    if null !== onBuildUpdate ::
       return onBuildUpdate(lastBuildUpdate)
 
   return Object.assign @ build_events(opts), @{}

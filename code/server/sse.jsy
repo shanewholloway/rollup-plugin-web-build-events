@@ -11,10 +11,15 @@ export function createEventSourceServer(opts) ::
     ? https.createServer(opts)
     : http.createServer(opts)
 
+  let last_evt_update = null
+  const send_initial_update = false !== opts.send_initial_update
   const subscription_set = new Set()
 
+  svr.unref() // don't keep a build open for an SSE build event server
   svr.on @ 'request', (req, res) => ::
-    asJSONServerSentEvents @ res, subscription_set
+    const send_update = asJSONServerSentEvents @ res, subscription_set
+    if last_evt_update !== null ::
+      send_update @ last_evt_update
 
   Object.defineProperties @ sendUpdates, @{}
     server: @{} value: svr
@@ -27,6 +32,8 @@ export function createEventSourceServer(opts) ::
   return sendUpdates
 
   function sendUpdates(evt_update) ::
+    if send_initial_update ::
+      last_evt_update = evt_update
     for const send_update of subscription_set ::
       send_update @ evt_update
 

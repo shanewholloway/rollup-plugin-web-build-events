@@ -1,3 +1,4 @@
+import {debounce} from '../utils.jsy'
 
 export const sse_reload_key = '@@sse-reload'
 export const sse_reload_evt_rebind = '@@sse-reload rebind'
@@ -12,6 +13,7 @@ export function connectReloadEventSource(url) ::
   if ! url :: url = 'http://127.0.0.1:35810'
 
   const tsid = Date.now().toString(36)
+  let update_count = 0
 
   const es = new EventSource(url)
   Object.assign @ es, @{}
@@ -34,6 +36,7 @@ export function connectReloadEventSource(url) ::
         return console.error @ `SSE reload JSON error (${tsid})`, err
 
       detail.tsid = tsid
+      detail.count = update_count++
       dispatch_update(detail)
 
 
@@ -57,13 +60,13 @@ export function connectReloadEventSource(url) ::
 
 
   function dispatch_update(detail) ::
-    const {updates, errors} = detail
+    const {updates, errors, tsid, count} = detail
     const has_errors = errors && 0 !== errors.length
     const grp_msg = has_errors
-      ? `SSE reload (${tsid}) with ${errors.length} errors`
+      ? `SSE reload (${tsid}:${count}) with ${errors.length} errors`
       : Array.isArray(updates)
-        ? `SSE reload (${tsid}) with ${updates.length} updates`
-        : `SSE reload (${tsid}) notice`
+        ? `SSE reload (${tsid}:${count}) with ${updates.length} updates`
+        : `SSE reload (${tsid}:${count}) notice`
 
     if has_errors ::
       console.group(grp_msg)
@@ -86,3 +89,44 @@ export function connectReloadEventSource(url) ::
     finally ::
       console.groupEnd(grp_msg)
 
+
+export function onSSEReloadUpdate({ms_reload, preventDefault, on_reload}) ::
+  const do_reload = debounce @ ms_reload || 150, on_reload
+
+  window.addEventListener @ sse_reload_evt_update, _on_reload_, false
+  return () => ::
+    window.removeEventListener @ sse_reload_evt_update, _on_reload_, false
+
+  function _on_reload_(evt) ::
+    if preventDefault && null != evt ::
+      evt.preventDefault()
+
+    const {count, updates, mapping} = evt.detail || {}
+    if 0 === count :: return
+    if null == updates || 0 === updates.length :: return
+
+    do_reload(evt.detail)
+
+
+export function onSSEReloadErrors({on_show, on_clear, on_update, on_start, on_stop, autoStart}) ::
+  window.addEventListener @ sse_reload_evt_errors, _on_update_, false
+  window.addEventListener @ sse_reload_evt_rebind, on_start, false
+  window.addEventListener @ sse_reload_evt_shutdown, on_stop, false
+
+  if autoStart :: on_start()
+  return () => ::
+    window.removeEventListener @ sse_reload_evt_errors, _on_update_, false
+    window.removeEventListener @ sse_reload_evt_rebind, on_start, false
+    window.removeEventListener @ sse_reload_evt_shutdown, on_stop, false
+
+  function _on_update_(evt) ::
+    const errorList = evt.detail || []
+    if 0 === errorList.length ::
+      if null !== on_clear ::
+        on_clear(evt)
+    else ::
+      if null !== on_show ::
+        on_show(errorList, evt)
+
+    if null != on_update ::
+      on_update(evt)

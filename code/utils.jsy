@@ -1,0 +1,11 @@
+
+export function debounce(ms, fn_inner) ::
+  if 'function' !== typeof fn_inner ::
+    throw new TypeError @ `Expected function`
+
+  let tid, apply_inner = args => fn_inner.apply(this, args)
+  return function () ::
+    tid = clearTimeout(tid),
+    tid = setTimeout(apply_inner, ms, arguments)
+    return tid
+

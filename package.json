@@ -1,6 +1,6 @@
 {
   "name": "rollup-plugin-web-build-events",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "license": "MIT",
   "author": "Shane Holloway",
@@ -10,6 +10,7 @@
     "rollup-plugin"
   ],
   "files": [
+    "sse.js",
     "cjs",
     "esm",
     "umd"

@@ -1,2 +1,5 @@
 export * from './base.jsy'
 export * from './sse.jsy'
+
+export {default as default} from './sse.jsy'
+
