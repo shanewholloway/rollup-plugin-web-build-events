@@ -153,7 +153,7 @@ const plugins = [
 function onBuildUpdate({mapping}) {
   // This will create `public/index.html` at build time with `data-live` and `data-live-build` 
   // attributes filled in.
-  datalive_renderHTMLTempalteFile({mapping, input: './template/index.html', output: './public/index.html'})
+  datalive_renderHTMLTempalteFile(mapping, {input: './template/index.html', output: './public/index.html'})
 }
 ```
 
@@ -194,6 +194,70 @@ in generated `public/index.html`:
   </body>
 </html>
 ```
+
+
+## Combine with Other Rollup Plugins
+
+### [`rollup-plugin-strip-code`](https://www.npmjs.com/package/rollup-plugin-strip-code)
+
+```bash
+$ npm install -D rollup-plugin-strip-code
+```
+
+in `rollup.config.js`:
+```javascript
+import rpi_strip_code from 'rollup-plugin-strip-code'
+
+const is_watch = -1 !== process.argv.indexOf('-w') || -1 !== process.argv.indexOf('--watch')
+const is_production = (/production/i).test(process.env.NODE_ENV)
+
+const plugins = [
+  // …
+
+  is_watch ? null : rpi_strip_code({
+    include: 'code/*',
+    start_comment: `BEGIN WATCH MODE`,
+    end_comment: `END WATCH MODE`,
+  }),
+
+  rpi_strip_code({
+    include: 'code/*',
+    start_comment: `BEGIN ${is_production ? 'DEV' : 'PROD'} ONLY`,
+    end_comment: `END ${is_production ? 'DEV' : 'PROD'} ONLY`,
+  }),
+
+  // …
+]
+
+```
+
+
+
+### [`rollup-plugin-replace`](https://www.npmjs.com/package/rollup-plugin-replace)
+
+```bash
+$ npm install -D rollup-plugin-replace
+```
+
+in `rollup.config.js`:
+```javascript
+import rpi_replace from 'rollup-plugin-replace'
+
+const is_production = (/production/i).test(process.env.NODE_ENV)
+
+const plugins = [
+  // …
+
+  rpi_replace({
+    include: 'code/*',
+    'process.env.NODE_ENV': JSON.stringify(is_production ? 'production' : 'development'),
+  }),
+
+  // …
+]
+```
+
+
 
 ## License
 

@@ -38,7 +38,11 @@ export function datalive_renderHTMLSource(mapping, source) ::
 
 export async function datalive_renderHTMLTempalteFile(mapping, options) ::
   if undefined === options ::
-    return options => datalive_renderHTMLTempalteFile(mapping, options)
+    if undefined === mapping.mapping ::
+      return options => datalive_renderHTMLTempalteFile(mapping, options || {})
+
+    options = mapping
+    mapping = options.mapping
 
   const html_source = await promisify(readFile) @ options.input, options.encoding || 'utf-8'
   const rendered = datalive_renderHTMLSource @ mapping, html_source
