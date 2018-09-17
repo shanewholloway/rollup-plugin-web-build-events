@@ -3,7 +3,7 @@ const path = require('path')
 import {debounce} from './utils.jsy'
 export default build_events
 
-export function build_events({contentBase, skip, ms_update, ms_watch, ms_build, onBuildUpdate}={}) ::
+export function build_events({ms_watch, ms_build, skip, contentBase, onBuildUpdate}={}) ::
   if 'function' !== typeof onBuildUpdate ::
     throw new TypeError('Expected onBuildUpdate to be a function')
 
@@ -16,10 +16,7 @@ export function build_events({contentBase, skip, ms_update, ms_watch, ms_build, 
   let innerBuildUpdate = function firstBuildUpdate() ::
     flags.is_watching = is_watching
 
-    if ! ms_update ::
-      ms_update = is_watching
-        ? ms_watch || 500
-        : ms_build || 100
+    const ms_update = is_watching ? ms_watch || 500 : ms_build || 100
 
     innerBuildUpdate = debounce @ ms_update, _computeBuildUpdate
 
@@ -30,6 +27,7 @@ export function build_events({contentBase, skip, ms_update, ms_watch, ms_build, 
     name: 'build-events',
 
     withBuildUpdater(updater_plugin_name) ::
+      // see [rollup-plugin-hash-n-gzip](https://github.com/shanewholloway/rollup-plugin-hash-n-gzip)
       ++usingOtherUpdaters
       return notifyBuildUpdate
 
