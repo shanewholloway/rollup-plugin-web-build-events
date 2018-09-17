@@ -1,0 +1,14 @@
+
+export default tinyLoad
+export function tinyLoad(src) ::
+  return new Promise @ (onload, onerror) =>
+    document.head.appendChild @
+      Object.assign @
+        document.createElement('script')
+
+        @{} src, onload, onerror
+
+        src.startsWith('http')
+          ? @{} crossorigin: true
+          : null
+

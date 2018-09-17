@@ -26,6 +26,7 @@ add_node_jsy('server/dataLive')
 add_web_jsy('browser/sse', {name: 'sse_build_events'})
 add_web_jsy('browser/dataLive', {name: 'reloadDataLive'})
 add_web_jsy('browser/reactErrorOverlay', {name: 'reloadReactErrorOverlay'})
+add_web_jsy('browser/tinyLoad', {name: 'tinyLoad'})
 add_web_jsy('browser/wholePage', {name: 'reloadWholePage'})
 
 

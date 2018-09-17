@@ -1,6 +1,6 @@
 {
   "name": "rollup-plugin-web-build-events",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Live reloading for Rollup-based projects",
   "license": "MIT",
   "author": "Shane Holloway",
