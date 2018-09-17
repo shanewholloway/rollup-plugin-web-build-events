@@ -4,6 +4,7 @@
 from the Rollup ecosystem to power customizable client reload capabilities
 — live partial reload, hot reloads, or full page reloads.
 
+See it all in action in [2018-09-JSY-website-with-rollup-tooling](https://github.com/shanewholloway/2018-09-JSY-website-with-rollup-tooling).
 
 ## Quick Start
 
@@ -20,7 +21,7 @@ development builds, use an flag from localStore to turn on debugging, etc.
 
 `some_client_side_source.js`:
 ```javascript
-/* BEGIN DEV ONLY */
+/* BEGIN WATCH MODE */
 // example using [rollup-plugin-strip-code](https://github.com/se-panfilov/rollup-plugin-strip-code#readme) for build variants
 
 import connectReloadEventSource from 'rollup-plugin-web-build-events/esm/browser/sse.js'
@@ -32,7 +33,7 @@ reloadDataLive()
 import reloadReactErrorOverlay from 'rollup-plugin-web-build-events/esm/browser/reactErrorOverlay.js'
 reloadReactErrorOverlay(ReactErrorOverlay)
 
-/* END DEV ONLY */
+/* END WATCH MODE */
 ```
 
 
